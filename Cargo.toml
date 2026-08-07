@@ -8,6 +8,7 @@ name = "nimbusbill"
 version = "0.1.0"
 edition = "2021"
 description = "NimbusBill — multi-cloud infrastructure and token cost estimator"
+license = "Apache-2.0"
 
 [lib]
 name = "nimbusbill"
