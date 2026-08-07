@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NimbusBill</title>
+  <link rel="icon" href="/static/logo.png" type="image/png" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <img src="/static/logo.png" alt="" class="logo" width="64" height="64" />
+        <div>
+          <h1>NimbusBill</h1>
+          <p class="subtitle">Multi-cloud infrastructure &amp; LLM token cost projection</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div id="sync-status" class="sync-status" aria-live="polite"></div>
+        <button type="button" id="sync-btn" class="btn secondary small" title="Refresh service list and LLM models. Does not fetch infrastructure unit prices — use live price capture on Calculate for those.">Sync catalog</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-wrap">
+    <div class="app-layout">
+      <div class="main-column">
+        <!-- Providers & options -->
+        <section class="card">
+          <h2>Cloud Providers</h2>
+          <div class="checkbox-row">
+            <label><input type="checkbox" name="provider" value="aws" checked /> AWS</label>
+            <label><input type="checkbox" name="provider" value="azure" checked /> Azure</label>
+            <label><input type="checkbox" name="provider" value="gcp" checked /> GCP</label>
+          </div>
+          <label class="live-toggle">
+            <input type="checkbox" id="live-pricing" />
+            <span>Use live price capture <small>(fetch fresh prices for your estimate only — not a full catalog sync)</small></span>
+          </label>
+        </section>
+
+        <!-- Infrastructure builder -->
+        <section class="card">
+          <div class="card-head">
+            <h2>Infrastructure Services</h2>
+            <label class="import-btn btn secondary small">
+              Load workload
+              <input type="file" id="import-file" accept=".json,.yaml,.yml,.csv,.xlsx" hidden />
+            </label>
+          </div>
+          <p class="hint">Search for a service, or browse by category. Then choose location, configuration, and usage.</p>
+
+          <label class="search-field">
+            Search services
+            <input type="search" id="service-search" placeholder="e.g. ec2, s3, redis, kafka" autocomplete="off" />
+          </label>
+          <ul id="search-results" class="search-results hidden" role="listbox"></ul>
+
+          <div class="service-builder">
+            <div class="builder-step">
+              <h3 class="step-title">1. Pick a service</h3>
+              <div class="form-grid step-grid">
+                <label class="form-field">
+                  <span class="field-label">Category</span>
+                  <select id="category-select"><option value="">— Select category —</option></select>
+                </label>
+                <label class="form-field">
+                  <span class="field-label">Service</span>
+                  <select id="service-select" disabled><option value="">— Select service —</option></select>
+                </label>
+                <label class="form-field">
+                  <span class="field-label">Cloud</span>
+                  <select id="cloud-select" disabled><option value="">— Select cloud —</option></select>
+                </label>
+              </div>
+            </div>
+
+            <div class="builder-step">
+              <h3 class="step-title">2. Choose location</h3>
+              <p class="step-hint">Region is the geographic area; sub-region is the provider code (e.g. Europe → eu-west-1, eastus, europe-west1).</p>
+              <div class="form-grid location-grid">
+                <label class="form-field">
+                  <span class="field-label">Region</span>
+                  <select id="region-select" disabled><option value="">— Geographic area —</option></select>
+                </label>
+                <label class="form-field">
+                  <span class="field-label">Sub-region</span>
+                  <select id="sub-region-select" disabled><option value="">— Cloud region code —</option></select>
+                </label>
+              </div>
+            </div>
+
+            <div class="builder-step">
+              <h3 class="step-title">3. Configure usage</h3>
+              <div class="form-grid usage-grid">
+                <label class="form-field form-field-wide">
+                  <span class="field-label">Configuration</span>
+                  <select id="sku-select" disabled><option value="">— Size / SKU —</option></select>
+                  <small class="field-hint">Instance type, tier, or SKU for this service and region.</small>
+                </label>
+                <label class="form-field" id="count-field">
+                  <span class="field-label">Resource count</span>
+                  <input type="number" id="count-input" min="0" step="1" value="1" />
+                  <small class="field-hint">VMs, nodes, buckets, etc.</small>
+                </label>
+                <label class="form-field" id="usage-field">
+                  <span class="field-label" id="usage-label">Usage / month</span>
+                  <input type="number" id="usage-input" min="0" step="1" value="0" />
+                  <small class="field-hint" id="usage-hint">Per resource, per month.</small>
+                </label>
+                <div class="form-field form-action">
+                  <button type="button" id="add-service-btn" class="btn secondary" disabled>Add Service</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- LLM section -->
+        <section class="card">
+          <label class="section-toggle">
+            <input type="checkbox" id="enable-llm" />
+            <h2>LLM / Token Usage</h2>
+          </label>
+          <div id="llm-panel" class="hidden">
+            <p class="hint">Token costs are billed per cloud. Cloud is inferred from your infrastructure services; models are filtered by region where available.</p>
+            <div class="form-grid llm-grid">
+              <label class="form-field" id="llm-cloud-field">
+                <span class="field-label">Cloud</span>
+                <select id="llm-cloud-select"><option value="">— Select cloud —</option></select>
+              </label>
+              <p id="llm-cloud-auto" class="llm-cloud-auto hidden"></p>
+              <label class="form-field form-field-wide">
+                <span class="field-label">Model</span>
+                <select id="llm-model" disabled><option value="">— Select model —</option></select>
+              </label>
+              <label class="form-field">
+                <span class="field-label">Input tokens / month</span>
+                <input type="number" id="input-tokens" min="0" step="1000" value="1000000" />
+              </label>
+              <label class="form-field">
+                <span class="field-label">Output tokens / month</span>
+                <input type="number" id="output-tokens" min="0" step="1000" value="250000" />
+              </label>
+              <div class="form-field form-action">
+                <button type="button" id="add-llm-btn" class="btn secondary">Add Model</button>
+              </div>
+            </div>
+            <details class="custom-llm">
+              <summary>Add custom model</summary>
+              <div class="form-grid">
+                <label class="form-field">
+                  <span class="field-label">Model ID</span>
+                  <input type="text" id="custom-model-id" placeholder="my-model" />
+                </label>
+                <label class="form-field">
+                  <span class="field-label">Display name</span>
+                  <input type="text" id="custom-model-label" placeholder="My Model" />
+                </label>
+                <label class="form-field">
+                  <span class="field-label">Cloud provider</span>
+                  <select id="custom-model-provider">
+                    <option value="aws">AWS (Bedrock)</option>
+                    <option value="azure">Azure (OpenAI)</option>
+                    <option value="gcp">GCP (Vertex AI)</option>
+                  </select>
+                </label>
+                <label class="form-field">
+                  <span class="field-label">Input $/M tokens</span>
+                  <input type="number" id="custom-input-rate" min="0" step="0.01" value="1.00" />
+                </label>
+                <label class="form-field">
+                  <span class="field-label">Output $/M tokens</span>
+                  <input type="number" id="custom-output-rate" min="0" step="0.01" value="3.00" />
+                </label>
+                <div class="form-field form-action">
+                  <button type="button" id="add-custom-llm-btn" class="btn secondary">Save Custom Model</button>
+                </div>
+              </div>
+            </details>
+          </div>
+        </section>
+      </div>
+
+      <aside class="estimate-sidebar">
+        <section class="card sidebar-card">
+          <h2>Your Estimate</h2>
+          <p id="sidebar-empty" class="sidebar-empty">Add infrastructure services or LLM models, then calculate.</p>
+
+          <div id="sidebar-services" class="sidebar-group hidden">
+            <h3 class="sidebar-heading">Infrastructure</h3>
+            <div id="selected-services" class="chip-list sidebar-chips"></div>
+          </div>
+
+          <div id="sidebar-llm" class="sidebar-group hidden">
+            <h3 class="sidebar-heading">LLM / Tokens</h3>
+            <div id="selected-llm" class="chip-list sidebar-chips"></div>
+          </div>
+
+          <div class="actions sidebar-actions">
+            <button type="button" id="calculate-btn" class="btn primary">Calculate Costs</button>
+            <span id="status" class="status"></span>
+          </div>
+
+          <div id="export-bar" class="export-bar hidden">
+            <span class="export-label">Download</span>
+            <div class="export-icons">
+              <button type="button" class="btn secondary small export" data-format="csv">CSV</button>
+              <button type="button" class="btn secondary small export" data-format="xlsx">Excel</button>
+              <button type="button" class="btn secondary small export" data-format="pdf">PDF</button>
+            </div>
+          </div>
+
+          <div id="results"></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

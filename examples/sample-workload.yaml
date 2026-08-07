@@ -1,0 +1,26 @@
+name: sample-workload
+description: Example web app on AWS with LLM usage
+
+resources:
+  - service: ec2
+    sku: t3.medium
+    region: us-east-1
+    quantity: "730"
+    unit: hours
+  - service: s3
+    sku: standard
+    region: us-east-1
+    quantity: "500"
+    unit: gb-month
+  - service: rds
+    sku: db.t3.medium
+    region: us-east-1
+    quantity: "730"
+    unit: hours
+
+token_usage:
+  - model: bedrock-claude-sonnet
+    provider: aws
+    cloud_provider: aws
+    input_tokens_per_month: 5000000
+    output_tokens_per_month: 1000000

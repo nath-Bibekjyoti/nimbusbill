@@ -1,0 +1,4 @@
+provider,service,region,sub_region,sku,quantity,instance_count,hours,unit
+aws,ec2,us-east-1,,t3.medium,730,1,730,hours
+aws,s3,us-east-1,,standard,500,1,500,gb-month
+aws,rds,us-east-1,,db.t3.medium,730,1,730,hours

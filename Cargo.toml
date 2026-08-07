@@ -1,0 +1,55 @@
+[workspace]
+members = [".", "src-tauri"]
+resolver = "2"
+default-members = ["src-tauri"]
+
+[package]
+name = "nimbusbill"
+version = "0.1.0"
+edition = "2021"
+description = "NimbusBill — multi-cloud infrastructure and token cost estimator"
+
+[lib]
+name = "nimbusbill"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nimbusbill-web"
+path = "src/bin/serve.rs"
+
+[[bin]]
+name = "nimbusbill"
+path = "src/bin/nimbusbill.rs"
+
+[dependencies]
+anyhow = "1"
+axum = { version = "0.8", features = ["json", "multipart"] }
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive", "env"] }
+directories = "5"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+rust_decimal = { version = "1", features = ["serde-with-str"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+urlencoding = "2"
+csv = "1"
+calamine = "0.26"
+rust_xlsxwriter = "0.79"
+printpdf = "0.7"
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["rt", "macros"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
