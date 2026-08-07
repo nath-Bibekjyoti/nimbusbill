@@ -1,0 +1,5 @@
+Nibusbill
+Copyright 2026 Bibekjyoti Nath
+
+This product includes software developed at
+The Apache Software Foundation (http://apache.org).
